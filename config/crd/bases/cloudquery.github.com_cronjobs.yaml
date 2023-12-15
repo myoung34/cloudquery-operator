@@ -34,13 +34,20 @@ spec:
           spec:
             description: CronJobSpec defines the desired state of CronJob
             properties:
-              foo:
-                description: Foo is an example field of CronJob. Edit cronjob_types.go
-                  to remove/update
+              configData:
+                description: ConfigData is the config data for cloud-query. It will
+                  be divided up into multiple configmaps and generate multiple cronjobs
+                  tied to those configmaps on a 1:1 relationship.
                 type: string
             type: object
           status:
             description: CronJobStatus defines the observed state of CronJob
+            properties:
+              lastSyncTime:
+                description: Information when was the last time the job was successfully
+                  synchronized.
+                format: date-time
+                type: string
             type: object
         type: object
     served: true

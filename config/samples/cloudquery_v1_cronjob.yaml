@@ -8,5 +8,83 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: cloudquery-operator
   name: cronjob-sample
+  namespace: cloudquery
 spec:
-  # TODO(user): Add fields here
+  configData: |
+    ---
+    kind: source
+    spec:
+      # Source spec section
+      name: "gcp"
+      path: "cloudquery/gcp"
+      registry: "cloudquery"
+      version: "v11.0.2"
+      destinations:
+        - gcs_gcp
+      tables:
+        - gcp_projects
+        - gcp_iam*
+        - gcp_compute_instances
+    ---
+    kind: source
+    spec:
+      name: aws
+      path: cloudquery/aws
+      registry: cloudquery
+      version: "v22.19.2"
+      destinations:
+        - gcs_aws
+      tables:
+        - aws_s3_*
+        - aws_iam_polic*
+        - aws_iam_role*
+        - aws_ec2_instance*
+        - aws_ec2_images
+      skip_tables:
+        - aws_ec2_instance_connect_endpoints
+      skip_dependent_tables: true # Lowers the amount of API calls by only pulling the tables specifically listed/globbed
+      spec:
+        aws_debug: false
+        org:
+          admin_account:
+            role_arn: arn:aws:iam::201530167438:role/cloud-query
+          member_role_name: cloud-query
+        regions:
+          # Regions are locked down by an SCP to line up with:
+          # https://reddit.atlassian.net/wiki/spaces/ENG/pages/2756051019/AWS+Organization+Management
+          # https://github.snooguts.net/reddit/aws-orgmanagement-terraform/pull/4
+          - 'us-east-1'
+          - 'us-east-2'
+          - 'us-west-1'
+          - 'us-west-2'
+          - 'eu-west-1'
+          - 'eu-west-2'
+          - 'eu-central-1'
+    ---
+    kind: destination
+    spec:
+      name: "gcs_aws"
+      path: "cloudquery/gcs"
+      registry: "cloudquery"
+      version: "v3.4.12"
+      spec:
+        bucket: "reddit-security-cloudquery"
+        path: "aws"
+        format: "parquet"
+        batch_size: 10000
+        batch_size_bytes: 52428800 # 50 MiB
+        batch_timeout: 30s # 30 seconds
+    ---
+    kind: destination
+    spec:
+      name: "gcs_gcp"
+      path: "cloudquery/gcs"
+      registry: "cloudquery"
+      version: "v3.4.12"
+      spec:
+        bucket: "reddit-security-cloudquery"
+        path: "gcp"
+        format: "parquet"
+        batch_size: 10000
+        batch_size_bytes: 52428800 # 50 MiB
+        batch_timeout: 30s # 30 seconds
